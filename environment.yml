@@ -1,0 +1,24 @@
+name: claymodel
+channels:
+  - conda-forge
+  - nvidia
+  - pytorch
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - torch>=2.5.0
+    - torchvision>=0.20.0
+    - einops~=0.7.0
+    - geopandas
+    - jsonargparse[signatures]>=4.27.7
+    - lightning
+    - matplotlib
+    - python-box
+    - rasterio
+    - scikit-image
+    - scikit-learn
+    - segmentation-models-pytorch
+    - timm
+    - vit-pytorch
+    - wandb

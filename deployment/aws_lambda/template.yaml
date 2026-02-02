@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Chesapeake Segmentation Model Lambda Deployment
+
+Parameters:
+  ModelBucketName:
+    Type: String
+    Description: S3 bucket name where model checkpoints are stored
+    Default: my-model-checkpoints
+  
+  ChesapeakeCheckpointKey:
+    Type: String
+    Description: S3 key for Chesapeake model checkpoint
+    Default: chesapeake-7class-segment_epoch-39_val-iou-0.8765.ckpt
+  
+  ClayCheckpointKey:
+    Type: String
+    Description: S3 key for Clay base model checkpoint
+    Default: clay-v1.5.ckpt
+
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 3008
+    EphemeralStorage:
+      Size: 10240
+    Environment:
+      Variables:
+        MODEL_BUCKET: !Ref ModelBucketName
+        CHESAPEAKE_CHECKPOINT_KEY: !Ref ChesapeakeCheckpointKey
+        CLAY_CHECKPOINT_KEY: !Ref ClayCheckpointKey
+
+Resources:
+  ChesapeakeSegmentationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      Architectures:
+        - arm64
+      Environment:
+        Variables:
+          CHESAPEAKE_CHECKPOINT_PATH: /tmp/chesapeake_model.ckpt
+          CLAY_CHECKPOINT_PATH: /tmp/clay_model.ckpt
+          METADATA_PATH: /var/task/configs/metadata.yaml
+      Events:
+        InferenceAPI:
+          Type: Api
+          Properties:
+            Path: /predict
+            Method: post
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref ModelBucketName
+    Metadata:
+      Dockerfile: deployment/aws_lambda/Dockerfile
+      DockerContext: ../../
+      DockerTag: latest
+
+Outputs:
+  ChesapeakeSegmentationApi:
+    Description: "API Gateway endpoint URL for Chesapeake Segmentation"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/predict/"
+  
+  ChesapeakeSegmentationFunction:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt ChesapeakeSegmentationFunction.Arn
+  
+  ChesapeakeSegmentationFunctionIamRole:
+    Description: "IAM Role for Lambda Function"
+    Value: !GetAtt ChesapeakeSegmentationFunctionRole.Arn

@@ -1,0 +1,23 @@
+# Core dependencies
+torch==2.4.0
+torchvision==0.19.0
+lightning>=2.0.0
+einops==0.7.0
+timm>=0.6.0
+
+# Segmentation model
+segmentation-models-pytorch
+
+# Metrics
+torchmetrics
+
+# Utilities
+numpy<2.0.0  # Pin to 1.x for compatibility with Lambda's GCC 7.3.1
+pillow
+pyyaml
+python-box
+
+# Remove heavy dependencies not needed for inference
+# wandb - not needed for inference
+# matplotlib - not needed for inference
+# geopandas - not needed for inference unless you need geospatial ops

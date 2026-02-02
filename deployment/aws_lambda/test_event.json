@@ -1,0 +1,6 @@
+{
+  "body": {
+    "image": "BASE64_ENCODED_IMAGE_HERE",
+    "output_size": [256, 256]
+  }
+}
