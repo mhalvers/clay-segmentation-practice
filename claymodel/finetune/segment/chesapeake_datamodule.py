@@ -45,6 +45,13 @@ class ChesapeakeDataset(Dataset):
             std=list(metadata[platform].bands.std.values()),
         )
 
+        # Precompute label remapping for fast indexing
+        label_mapping = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 15: 6}
+        # Use a fixed LUT size to avoid index errors for unexpected label values
+        self.label_lut = np.zeros(256, dtype=np.uint8)
+        for src_label, dst_label in label_mapping.items():
+            self.label_lut[src_label] = dst_label
+
         # Load chip and label file names
         self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npy")][
             :1000
@@ -87,9 +94,8 @@ class ChesapeakeDataset(Dataset):
         chip = np.load(chip_name).astype(np.float32)
         label = np.load(label_name)
 
-        # Remap labels to match desired classes
-        label_mapping = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 15: 6}
-        remapped_label = np.vectorize(label_mapping.get)(label)
+        # Remap labels to match desired classes (fast LUT indexing)
+        remapped_label = self.label_lut[label]
 
         sample = {
             "pixels": self.transform(torch.from_numpy(chip)),
@@ -126,6 +132,8 @@ class ChesapeakeDataModule(L.LightningDataModule):
         num_workers,
         platform,
         persistent_workers=False,
+        pin_memory=False,
+        prefetch_factor=2,
     ):
         super().__init__()
         self.train_chip_dir = train_chip_dir
@@ -137,6 +145,8 @@ class ChesapeakeDataModule(L.LightningDataModule):
         self.num_workers = num_workers
         self.platform = platform
         self.persistent_workers = persistent_workers
+        self.pin_memory = pin_memory
+        self.prefetch_factor = prefetch_factor
 
     def setup(self, stage=None):
         """
@@ -172,6 +182,8 @@ class ChesapeakeDataModule(L.LightningDataModule):
             shuffle=True,
             num_workers=self.num_workers,
             persistent_workers=self.persistent_workers,
+            pin_memory=self.pin_memory,
+            prefetch_factor=self.prefetch_factor,
         )
 
     def val_dataloader(self):
@@ -186,4 +198,6 @@ class ChesapeakeDataModule(L.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             persistent_workers=self.persistent_workers,
+            pin_memory=self.pin_memory,
+            prefetch_factor=self.prefetch_factor,
         )

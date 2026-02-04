@@ -6,9 +6,11 @@ data:
   val_chip_dir: data/cvpr/ny/val/chips/
   val_label_dir: data/cvpr/ny/val/labels/
   metadata_path: configs/metadata.yaml
-  batch_size: 8
-  num_workers: 6
-  persistent_workers: true
+  batch_size: 2
+  num_workers: 2
+  persistent_workers: false
+  pin_memory: false
+  prefetch_factor: 2
   platform: naip
 model:
   num_classes: 7
@@ -22,10 +24,10 @@ trainer:
   strategy: auto
   devices: auto
   num_nodes: 1
-  precision: 32
-  log_every_n_steps: 5
-  max_epochs: 100
-  accumulate_grad_batches: 1
+  precision: 16-mixed
+  log_every_n_steps: 10
+  max_epochs: 40
+  accumulate_grad_batches: 8
   default_root_dir: checkpoints
   fast_dev_run: False
   num_sanity_val_steps: 0

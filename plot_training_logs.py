@@ -4,8 +4,10 @@ import matplotlib.pyplot as plt
 
 import matplotlib as mpl
 
+training_version = "version_18"
+
 # %%
-df = pd.read_csv('logs/lightning_logs/version_11/metrics.csv')
+df = pd.read_csv(f'logs/lightning_logs/{training_version}/metrics.csv')
 df
 
 # %%
@@ -31,7 +33,6 @@ epoch_logs = epoch_logs.drop(columns=["step"])
 # %% drop columsn with "step" in the name
 has_step = [col for col in epoch_logs.columns if "step" in col]
 epoch_logs = epoch_logs.drop(columns=has_step)
-
 
 # %%
 epoch_logs.plot(color=colors)
