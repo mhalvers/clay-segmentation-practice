@@ -17,7 +17,5 @@ pillow
 pyyaml
 python-box
 
-# Remove heavy dependencies not needed for inference
-# wandb - not needed for inference
-# matplotlib - not needed for inference
-# geopandas - not needed for inference unless you need geospatial ops
+# Additional dependency for JSON parsing
+jsonargparse[signatures]>=4.27.1

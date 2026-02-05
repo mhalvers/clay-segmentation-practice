@@ -39,16 +39,14 @@ docker build -f deployment/aws_lambda/Dockerfile -t chesapeake-segmentation:late
 
 ### Run Container Locally
 
+This method uses Docker volumes to mount your local model files into the container, avoiding the need for AWS credentials or S3 downloads.
+
+**Run the container:**
 ```bash
-docker run -p 9000:8080 \
-  -e MODEL_BUCKET=clay-model-checkpoints \
-  -e CHESAPEAKE_CHECKPOINT_KEY=chesapeake-7class-segment_epoch-39_val-iou-0.8765.ckpt \
-  -e CLAY_CHECKPOINT_KEY=clay-v1.5.ckpt \
-  -e CHESAPEAKE_CHECKPOINT_PATH=/tmp/chesapeake_model.ckpt \
-  -e CLAY_CHECKPOINT_PATH=/tmp/clay_model.ckpt \
-  -e AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id) \
-  -e AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key) \
-  -e AWS_DEFAULT_REGION=ca-central-1 \
+docker run --rm -p 9000:8080 \
+  -e EXECUTION_MODE=local \
+  -v "$(pwd)/checkpoints:/var/task/checkpoints" \
+  -v "$(pwd)/configs:/var/task/configs" \
   chesapeake-segmentation:latest
 ```
 
@@ -58,7 +56,7 @@ docker run -p 9000:8080 \
 # In another terminal
 curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
   -H "Content-Type: application/json" \
-  -d @test_event_real.json \
+  -d @/deployment/aws_lambda/test_event_real.json \
   -o response.json
 ```
 
@@ -66,7 +64,7 @@ curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
 
 ```bash
 python visualize_response.py response.json segmentation_output.png
-open segmentation_output.png
+open segmentation_output.png (on Mac OSX)
 ```
 
 ## AWS Lambda Deployment

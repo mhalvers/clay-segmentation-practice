@@ -44,44 +44,48 @@ def download_model_from_s3():
 
 
 def load_model():
-    """Load the model once and cache it."""
+    """
+    Load the model once and cache it.
+    
+    Detects the execution environment. If EXECUTION_MODE is 'local',
+    it assumes a local Docker environment with mounted volumes.
+    Otherwise, it defaults to AWS behavior and downloads from S3.
+    """
     global MODEL
     if MODEL is None:
-        # Download models from S3 first
-        download_model_from_s3()
-        
-        chesapeake_checkpoint_path = os.environ.get(
-            "CHESAPEAKE_CHECKPOINT_PATH", "/tmp/chesapeake_model.ckpt"
-        )
-        clay_checkpoint_path = os.environ.get(
-            "CLAY_CHECKPOINT_PATH", "/tmp/clay_model.ckpt"
-        )
-        metadata_path = os.environ.get(
-            "METADATA_PATH", "/var/task/configs/metadata.yaml"
-        )
+        # Check for an explicit environment variable to determine the mode
+        if os.environ.get("EXECUTION_MODE") == "local":
+            print("--- LOCAL MODE DETECTED ---")
+            # Use hardcoded paths for local testing with mounted volumes
+            chesapeake_checkpoint_path = "checkpoints/chesapeake-7class-segment_epoch-27_val-iou-0.8794.ckpt"
+            clay_checkpoint_path = "checkpoints/clay-v1.5.ckpt"
+            config_path = "configs/segment_chesapeake_m4_train.yaml"
 
-        # Load checkpoint manually to avoid Lightning CLI issues
-        print("Loading Chesapeake checkpoint...")
-        checkpoint = torch.load(chesapeake_checkpoint_path, map_location=DEVICE)
-        
-        # Extract hyperparameters from checkpoint
-        hparams = checkpoint.get('hyper_parameters', {})
-        
-        # Create model instance with checkpoint parameters
-        MODEL = ChesapeakeSegmentor(
-            num_classes=hparams.get('num_classes', 7),
-            ckpt_path=clay_checkpoint_path,
-            lr=hparams.get('lr', 1e-4),
-            wd=hparams.get('wd', 0.05),
-            b1=hparams.get('b1', 0.9),
-            b2=hparams.get('b2', 0.95),
+        else:
+            print("--- AWS LAMBDA ENVIRONMENT DETECTED (DEFAULT) ---")
+            print("Downloading model from S3...")
+            download_model_from_s3()
+            
+            chesapeake_checkpoint_path = os.environ.get(
+                "CHESAPEAKE_CHECKPOINT_PATH", "/tmp/chesapeake_model.ckpt"
+            )
+            clay_checkpoint_path = os.environ.get(
+                "CLAY_CHECKPOINT_PATH", "/tmp/clay_model.ckpt"
+            )
+            config_path = os.environ.get("MODEL_CONFIG_PATH")
+
+        print(f"Loading Chesapeake model from: {chesapeake_checkpoint_path}")
+        print(f"Loading CLAY model from: {clay_checkpoint_path}")
+        print(f"Using config file: {config_path}")
+
+        MODEL = ChesapeakeSegmentor.load_from_checkpoint(
+            chesapeake_checkpoint_path,
+            clay_model_path=clay_checkpoint_path,
+            cfg=config_path,
+            map_location=DEVICE,
         )
-        
-        # Load state dict
-        MODEL.load_state_dict(checkpoint['state_dict'])
-        MODEL.eval()
         MODEL.to(DEVICE)
-        print("Model loaded successfully")
+        MODEL.eval()
     return MODEL
 
 

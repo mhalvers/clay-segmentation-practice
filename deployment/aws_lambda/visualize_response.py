@@ -6,8 +6,6 @@ import json
 import sys
 import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 
 
 # Chesapeake land cover class colors
